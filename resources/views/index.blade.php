@@ -33,7 +33,7 @@ and open the template in the editor.
                 font-size: 120%;
             }
             .buttons{
-                width: 30%;
+                width: 35%;
             }
         </style>
     </head>
