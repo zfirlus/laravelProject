@@ -32,6 +32,9 @@ and open the template in the editor.
                 font-family: times, Times New Roman, times-roman, georgia, serif;
                 font-size: 120%;
             }
+            .buttons{
+                width: 30%;
+            }
         </style>
     </head>
     <body>
@@ -59,7 +62,7 @@ and open the template in the editor.
                         </div>
                         <div class="form-group">
                             {!! Form::submit('OK', 
-                            array('class'=>'btn btn-primary')) !!}
+                            array('class'=>'btn buttons')) !!}
                         </div>
                         {!! Form::close() !!}
                     </div>
