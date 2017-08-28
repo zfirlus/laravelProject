@@ -15,7 +15,7 @@ class CreateExpensesTable extends Migration
     {
         Schema::create('expenses', function (Blueprint $table) {
             $table->increments('expenses_id');
-            $table->string('name')->unique();
+            $table->string('name');
             $table->float('amount');
             $table->integer('user_id');
             $table->rememberToken();

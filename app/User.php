@@ -6,19 +6,20 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 
-class User extends Model {
+class User extends Authenticatable {
 
     use Notifiable;
 
     public $timestamps = false;
-    protected $table = 'user';
-
+    protected $table = 'users';
+    protected $primaryKey = "user_id";
+    
     protected $fillable = [
-        'user_id', 'email', 'password', 'isadmin',
+       'email', 'password', 'isadmin',
     ];
 
     protected $hidden = [
-        'user_id', 'password', 'remember_token',
+       'user_id','password', 'remember_token',
     ];
 
 }

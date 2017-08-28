@@ -17,6 +17,8 @@ class CreatePaymentTable extends Migration
             $table->increments('payment_id');
             $table->integer('status_id');
             $table->integer('expenses_id');
+            $table->string('client');
+            $table->float('amount');
             $table->rememberToken();
             $table->timestamps();
         });

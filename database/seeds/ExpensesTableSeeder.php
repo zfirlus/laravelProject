@@ -18,7 +18,7 @@ class ExpensesTableSeeder extends Seeder
         ]);
         DB::table('expenses')->insert([
             'name' => 'opłaty za prąd',
-            'amount' => '100',
+            'amount' => '200',
             'user_id' => '1',
         ]);
     }

@@ -118,6 +118,7 @@ return [
         /*
          * Laravel Framework Service Providers...
          */
+        Appstract\BootstrapComponents\BootstrapComponentsServiceProvider::class,
         Collective\Html\HtmlServiceProvider::class,
         Illuminate\Auth\AuthServiceProvider::class,
         Illuminate\Broadcasting\BroadcastServiceProvider::class,
@@ -165,6 +166,7 @@ return [
       |
      */
     'aliases' => [
+        'BootstrapComponents' => Appstract\BootstrapComponents\BootstrapComponentsFacade::class,
         'Form' => Collective\Html\FormFacade::class,
         'Html' => Collective\Html\HtmlFacade::class,
         'App' => Illuminate\Support\Facades\App::class,

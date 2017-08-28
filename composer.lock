@@ -4,8 +4,122 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "ea7c3af7a031a97896fd786274ddb31f",
+    "content-hash": "f8995e14d44c03fd4a6411c3f1fc45c1",
     "packages": [
+        {
+            "name": "appstract/laravel-blade-directives",
+            "version": "0.4.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/appstract/laravel-blade-directives.git",
+                "reference": "6f44e7f2c29c5f4660951f98de3fc43c295da9f7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/appstract/laravel-blade-directives/zipball/6f44e7f2c29c5f4660951f98de3fc43c295da9f7",
+                "reference": "6f44e7f2c29c5f4660951f98de3fc43c295da9f7",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.6"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^5.7"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Appstract\\BladeDirectives\\BladeDirectivesServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Appstract\\BladeDirectives\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Gijs Jorissen",
+                    "email": "hello@appstract.team",
+                    "homepage": "https://appstract.team",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Handy Blade directives",
+            "homepage": "https://github.com/appstract/laravel-blade-directives",
+            "keywords": [
+                "appstract",
+                "laravel-blade-directives"
+            ],
+            "time": "2017-06-29T20:14:14+00:00"
+        },
+        {
+            "name": "appstract/laravel-bootstrap-components",
+            "version": "0.1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/appstract/laravel-bootstrap-components.git",
+                "reference": "8b8d14e4b4e99c1f253a1005024d5a6fbd6f874d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/appstract/laravel-bootstrap-components/zipball/8b8d14e4b4e99c1f253a1005024d5a6fbd6f874d",
+                "reference": "8b8d14e4b4e99c1f253a1005024d5a6fbd6f874d",
+                "shasum": ""
+            },
+            "require": {
+                "appstract/laravel-blade-directives": "^0.4",
+                "laravel/framework": ">=5.4",
+                "php": ">=5.6"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^5.7"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Appstract\\BootstrapComponents\\BootstrapComponentsServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Appstract\\BootstrapComponents\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Olav van Schie",
+                    "email": "hello@appstract.team",
+                    "homepage": "https://appstract.team",
+                    "role": "Developer"
+                },
+                {
+                    "name": "Gijs Jorissen",
+                    "email": "hello@appstract.team",
+                    "homepage": "https://appstract.team",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Bootstrap components for Laravel",
+            "homepage": "https://github.com/appstract/laravel-bootstrap-components",
+            "keywords": [
+                "appstract",
+                "laravel-bootstrap-components"
+            ],
+            "time": "2017-06-20T13:18:48+00:00"
+        },
         {
             "name": "dnoegel/php-xdg-base-dir",
             "version": "0.1",

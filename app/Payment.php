@@ -11,12 +11,13 @@ class Payment extends Model
 
     public $timestamps = false;
     protected $table = 'payment';
-
+    protected $primaryKey = "payment_id";
+    
     protected $fillable = [
         'status_id', 'expenses_id', 'created_at', 'client', 'amount',
     ];
 
     protected $hidden = [
-        'payment_id', 'remember_token',
+       'payment_id','remember_token',
     ];
 }
