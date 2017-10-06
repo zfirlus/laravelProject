@@ -68,11 +68,21 @@ class User extends Authenticatable {
         User::updateOrCreate(['user_id' => [$data->user_id]], ['email' => $data['email'],
             'update_at' => $date,]);
     }
-    
-    public function editUserRole($role, $userId){
+
+    public function editUserRole($role, $userId) {
         $date = date_create('now')->format("Y-m-d H:i:s");
         User::updateOrCreate(['user_id' => [$userId]], ['isadmin' => $role,
-                'update_at' => $date,]);
+            'update_at' => $date,]);
+        
+        $user = $this::getUser($userId)->get()[0];
+        if ($role == 1) {
+            $user->assignRole('admin');
+            $user->removeRole('user');
+        }
+        if ($role == 0) {
+            $user->assignRole('user');
+            $user->removeRole('admin');
+        }
     }
 
 }

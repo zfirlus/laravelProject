@@ -61,30 +61,7 @@ class CreatePermissionTables extends Migration {
 
             $table->primary(['permission_id', 'role_id']);
         });
-       /*
-        Schema::table($tableNames['user_has_permissions'], function (Blueprint $table) use ($tableNames, $foreignKeys){
-            $table->foreign('permission_id')
-                    ->references('id')
-                    ->on($tableNames['permissions'])
-                    ->onDelete('cascade');
-            
-            $table->foreign($foreignKeys['users'])
-                    ->references('id')
-                    ->on($tableNames['users'])
-                    ->onDelete('cascade');
-        });
-        
-        Schema::table($tableNames['user_has_roles'], function (Blueprint $table) use ($tableNames, $foreignKeys){
-            $table->foreign('role_id')
-                    ->references('id')
-                    ->on($tableNames['roles'])
-                    ->onDelete('cascade');
-
-            $table->foreign($foreignKeys['users'])
-                    ->references('id')
-                    ->on($tableNames['users'])
-                    ->onDelete('cascade');
-        });*/
+      
     }
 
     /**

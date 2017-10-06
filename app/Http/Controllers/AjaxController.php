@@ -71,6 +71,8 @@ class AjaxController extends Controller {
                     }
                     $expenses[$e]->delete();
                 }
+                $this->userModel->getUser($id[$i])->get()[0]->removeRole('user');
+                $this->userModel->getUser($id[$i])->get()[0]->removeRole('admin');
                 $this->userModel->getUser($id[$i])->get()[0]->delete();
             }
             return response(['success']);
