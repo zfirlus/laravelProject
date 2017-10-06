@@ -18,9 +18,9 @@ $(document).ready(function () {
         }
     });
 //zaznacz wszystkie
-    var guzik_wszystkie = document.getElementById('zaznacz_wszystkie');
-    guzik_wszystkie.addEventListener('click', zaznacz_wszystkie);
-    function zaznacz_wszystkie() {
+    var guzikWszystkie = document.getElementById('zaznaczWszystkie');
+    guzikWszystkie.addEventListener('click', zaznaczWszystkie);
+    function zaznaczWszystkie() {
         var checksy = document.getElementsByName('check');
         for (var i = 0; i < checksy.length; i++) {
             if (checksy[i].getAttribute('disabled') !== 'disabled') {
@@ -29,9 +29,9 @@ $(document).ready(function () {
         }
     }
 //odznacz
-    var guzik_odznacz = document.getElementById('odznacz');
-    guzik_odznacz.addEventListener('click', odznacz_zaznaczone);
-    function odznacz_zaznaczone() {
+    var guzikOdznacz = document.getElementById('odznacz');
+    guzikOdznacz.addEventListener('click', odznaczZaznaczone);
+    function odznaczZaznaczone() {
         var checksy = document.getElementsByName('check');
         for (var i = 0; i < checksy.length; i++) {
             if (checksy[i].checked) {
@@ -40,9 +40,9 @@ $(document).ready(function () {
         }
     }
 //usuwanie
-    var guzik_usun = document.getElementById('usun_zaznaczone');
-    guzik_usun.addEventListener('click', usun_zaznaczone);
-    function usun_zaznaczone() {
+    var guzikUsun = document.getElementById('usunZaznaczone');
+    guzikUsun.addEventListener('click', usunZaznaczone);
+    function usunZaznaczone() {
         var zaznaczone = new Array();
         var j = 0;
         var checksy = document.getElementsByName('check');
@@ -61,13 +61,14 @@ $(document).ready(function () {
 
             $.ajax({
                 type: "POST",
-                url: '{{url::to("deleteexpenses")}}',
+                url: '{{url::to("deleteExpenses")}}',
                 async: true,
                 data: {
                     data: zaz2
                 },
                 success: function (ret) {
-                    alert('Wydatki zostały usunięte pomyślnie!');
+                    if(ret == 'success'){
+                    alert('Wydatki zostały usunięte pomyślnie!');}
                 },
                 complete: function () {
                     location.reload();
@@ -90,6 +91,11 @@ $(document).ready(function () {
                 <div class="panel-heading">Wydatki</div>
 
                 <div class="panel-body">
+                    @if (session('message'))
+                    <div class="alert alert-danger">
+                        {{ session('message') }}
+                    </div>
+                    @endif
                     <table class="table table-striped">
                         <thead>
                             <tr>
@@ -101,9 +107,11 @@ $(document).ready(function () {
                                         </button>
                                         <ul class="dropdown-menu">
                                             <li><a id="odznacz" href="#">Odznacz</a></li>
-                                            <li><a id="zaznacz_wszystkie" href="#">Zaznacz wszystkie</a></li>
+                                            <li><a id="zaznaczWszystkie" href="#">Zaznacz wszystkie</a></li>
                                             <li role="separator" class="divider"></li>
-                                            <li id="usun"><a id="usun_zaznaczone" href="#">Usuń zaznaczone</a></li>
+                                            @if (Auth::check()&& (Auth::user()->hasAnyRole(['admin', 'user'])))
+                                            <li id="usun"><a id="usunZaznaczone" href="#">Usuń zaznaczone</a></li>
+                                            @endif
                                         </ul>
                                     </div></th>
                                 <th>Nazwa</th>
@@ -113,7 +121,7 @@ $(document).ready(function () {
                             </tr>
                         </thead>
                         <tbody>
-
+                            @if (Auth::check()&& Auth::user()->hasAnyRole(['admin','user']) && Auth::user()->hasPermissionTo('view expenses'))    
                             @foreach($expenses as $post)
                             <tr>
                                 <td>@if($post->status === 'block')<input type="checkbox" name="check" id="check{{$post['expenses_id']}}" disabled="disabled"/>
@@ -121,19 +129,22 @@ $(document).ready(function () {
                                 </td>
                                 <td>{{$post['name']}}</td>
                                 <td>{{$post['amount']}}</td>
-                                <td><a href="{{ route('editexpense',$post->expenses_id)}}"> Edytuj </a></td>
+                                <td>@if (Auth::check()&& (Auth::user()->hasAnyRole(['admin','user'])))
+                                    <a href="{{ route('editExpense',$post->expenses_id)}}"> Edytuj </a>@endif
+                                </td>
                                 <td><a href="{{ route('payment',$post->expenses_id) }}"> Przejdź do płatności </a></td>
                             </tr>
                             @endforeach
-
+                            @endif
                         </tbody>
-                        
+
                     </table>
                     <div>{{ $pagination }} </div>
+                    @if (Auth::check()&& Auth::user()->hasRole('user'))
                     <div>
-                        <button type="submit" onClick="location.href = '{{ url('newexpense') }}'" class="btn btn-primary" style="position: absolute; margin-left:75%; margin-top:-7.5%;" >Dodaj wydatek</button>
+                        <button type="submit" onClick="location.href = '{{ url('newExpense') }}'" class="btn btn-primary" style="position: absolute; margin-left:75%; margin-top:-7.5%;" >Dodaj wydatek</button>
                     </div>
-                    
+                    @endif
                 </div>
             </div>
         </div>

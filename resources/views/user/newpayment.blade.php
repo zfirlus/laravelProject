@@ -9,7 +9,7 @@
             <div class="panel panel-default">
                 <div class="panel-heading">Dodaj nową płatność</div>
                 <div class="panel-body">
-                    <form class="form-horizontal" method="POST" action="{{ url('addpayment') }}">
+                    <form class="form-horizontal" method="POST" action="{{ url('addPayment') }}">
                         {{ csrf_field() }}
 
                         <div class="form-group{{ $errors->has('client') ? ' has-error' : '' }}">

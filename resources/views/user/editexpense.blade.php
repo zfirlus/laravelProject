@@ -9,7 +9,7 @@
             <div class="panel panel-default">
                 <div class="panel-heading">Edycja</div>
                 <div class="panel-body">
-                    <form class="form-horizontal" method="POST" action="{{ url('editexpense') }}">
+                    <form class="form-horizontal" method="POST" action="{{ url('editExpense') }}">
                         {{ csrf_field() }}
                         <input id="expenses_id" type="hidden" name="expenses_id" value="{{ $expense['expenses_id']}}" required autofocus>
                         <div class="form-group{{ $errors->has('name') ? ' has-error' : '' }}">

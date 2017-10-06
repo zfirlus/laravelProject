@@ -10,7 +10,8 @@
         "appstract/laravel-bootstrap-components": "^0.1.2",
         "laravel/framework": "5.4.*",
         "laravel/tinker": "~1.0",
-        "laravelcollective/html": "~5.4"
+        "laravelcollective/html": "~5.4",
+        "spatie/laravel-permission": "^1.13"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",

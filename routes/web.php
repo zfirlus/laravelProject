@@ -18,62 +18,64 @@ Route::get('payment/{expenses_id}', [
     "uses" => 'PaymentController@store',
     "as" => 'payment'
 ]);
-Route::get('editpayment/{payment_id}', [
+Route::get('editPayment/{payment_id}', [
     "uses" => 'PaymentController@show',
-    "as" => 'editpayment'
+    "as" => 'editPayment'
 ]);
 
-Route::post('deletepayment', 'AjaxController@deletepayment');
+Route::post('deletePayment', 'AjaxController@deletePayment');
 
-Route::post('deleteexpenses', 'AjaxController@deleteexpense');
+Route::post('deleteExpenses', 'AjaxController@deleteExpense');
 
-Route::post('deleteuser', 'AjaxController@deleteuser');
+Route::post('deleteUser', 'AjaxController@deleteUser');
 
-Route::post('saverole', 'AjaxController@saverole');
+Route::post('saveRole', 'AjaxController@saveRole');
 
-Route::get('newpayment', 'PaymentController@index');
+Route::get('newPayment', 'PaymentController@index');
 
-Route::post('addpayment', 'PaymentController@create');
+Route::post('addPayment', 'PaymentController@create');
 
-Route::get('editpayment/{payment_id}', [
-    "uses" => 'PaymentController@editform',
-    "as" => 'editpayment'
+Route::get('editPayment/{payment_id}', [
+    "uses" => 'PaymentController@editForm',
+    "as" => 'editPayment'
 ]);
 
-Route::post('editpayment', 'PaymentController@edit');
+Route::post('editPayment', 'PaymentController@edit');
 
-Route::get('editexpense/{expenses_id}', [
-    "uses" => 'ExpensesController@editform',
-    "as" => 'editexpense'
+Route::get('editExpense/{expenses_id}', [
+    "uses" => 'ExpensesController@editForm',
+    "as" => 'editExpense'
 ]);
-Route::post('editexpense', 'ExpensesController@edit');
+Route::post('editExpense', 'ExpensesController@edit');
 
-Route::get('newexpense', 'ExpensesController@createform');
-Route::post('newexpense', 'ExpensesController@create');
+Route::get('newExpense', 'ExpensesController@createForm');
+Route::post('newExpense', 'ExpensesController@create');
 
 Route::get('users', 'UserController@index')->name('users');
 
-Route::get('newuser', 'UserController@register');
-Route::post('newuser', 'UserController@create')->name('newuser');
+Route::get('newUser', 'UserController@register');
+Route::post('newUser', 'UserController@create')->name('newUser');
 
-Route::get('edituser/{user_id}', [
-    "uses" => 'UserController@editform',
-    "as" => 'edituser'
+Route::get('editUser/{user_id}', [
+    "uses" => 'UserController@editForm',
+    "as" => 'editUser'
 ]);
 
-Route::post('edituser', 'UserController@edit');
+Route::post('editUser', 'UserController@edit');
 
-Route::get('adminpayment/{expenses_id}', [
+Route::get('adminPayment/{expenses_id}', [
     "uses" => 'PaymentController@show',
-    "as" => 'adminpayment'
+    "as" => 'adminPayment'
 ]);
 
-Route::get('admineditpayment/{payment_id}', [
-    "uses" => 'PaymentController@admineditform',
-    "as" => 'admineditpayment'
+Route::get('adminEditPayment/{payment_id}', [
+    "uses" => 'PaymentController@adminEditForm',
+    "as" => 'adminEditPayment'
 ]);
-Route::post('admineditpayment', 'PaymentController@adminedit');
+Route::post('adminEditPayment', 'PaymentController@adminEdit');
 
 Auth::routes();
 Route::get('/', 'HomeController@index')->name('home');
+
+
 

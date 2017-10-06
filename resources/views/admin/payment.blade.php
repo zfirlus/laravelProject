@@ -18,9 +18,9 @@ $(document).ready(function () {
         }
     });
 //zaznacz wszystkie
-    var guzik_wszystkie = document.getElementById('zaznacz_wszystkie');
-    guzik_wszystkie.addEventListener('click', zaznacz_wszystkie);
-    function zaznacz_wszystkie() {
+    var guzikWszystkie = document.getElementById('zaznaczWszystkie');
+    guzikWszystkie.addEventListener('click', zaznaczWszystkie);
+    function zaznaczWszystkie() {
         var checksy = document.getElementsByName('check');
         for (var i = 0; i < checksy.length; i++) {
             if (checksy[i].getAttribute('disabled') !== 'disabled') {
@@ -29,9 +29,9 @@ $(document).ready(function () {
         }
     }
 //odznacz
-    var guzik_odznacz = document.getElementById('odznacz');
-    guzik_odznacz.addEventListener('click', odznacz_zaznaczone);
-    function odznacz_zaznaczone() {
+    var guzikOdznacz = document.getElementById('odznacz');
+    guzikOdznacz.addEventListener('click', odznaczZaznaczone);
+    function odznaczZaznaczone() {
         var checksy = document.getElementsByName('check');
         for (var i = 0; i < checksy.length; i++) {
             if (checksy[i].checked) {
@@ -40,9 +40,9 @@ $(document).ready(function () {
         }
     }
 //usuwanie
-    var guzik_usun = document.getElementById('usun_zaznaczone');
-    guzik_usun.addEventListener('click', usun_zaznaczone);
-    function usun_zaznaczone() {
+    var guzikUsun = document.getElementById('usunZaznaczone');
+    guzikUsun.addEventListener('click', usunZaznaczone);
+    function usunZaznaczone() {
         var zaznaczone = new Array();
         var j = 0;
         var checksy = document.getElementsByName('check');
@@ -61,19 +61,21 @@ $(document).ready(function () {
 
             $.ajax({
                 type: "POST",
-                url: '{{url::to("deletepayment")}}',
+                url: '{{url::to("deletePayment")}}',
                 async: true,
                 data: {
                     data: zaz2
                 },
                 success: function (ret) {
-                    alert('Platność została usunięta pomyślnie!');
+                    if (ret == 'success') {
+                        alert('Platność została usunięta pomyślnie!');
+                    }
                 },
                 complete: function () {
                     location.reload();
                 },
                 error: function (jqXHR, errorText, errorThrown) {
-                    alert('error!');
+
                 }
             });
         }
@@ -90,6 +92,11 @@ $(document).ready(function () {
                 <div class="panel-heading">Lista płatności</div>
 
                 <div class="panel-body">
+                    @if (session('message'))
+                    <div class="alert alert-danger">
+                        {{ session('message') }}
+                    </div>
+                    @endif
                     <table class="table table-striped">
                         <thead>
                             <tr>
@@ -101,9 +108,11 @@ $(document).ready(function () {
                                         </button>
                                         <ul class="dropdown-menu">
                                             <li><a id="odznacz" href="#">Odznacz</a></li>
-                                            <li><a id="zaznacz_wszystkie" href="#">Zaznacz wszystkie</a></li>
+                                            <li><a id="zaznaczWszystkie" href="#">Zaznacz wszystkie</a></li>
                                             <li role="separator" class="divider"></li>
-                                            <li id="usun"><a id="usun_zaznaczone" href="#">Usuń zaznaczone</a></li>
+                                            @if (Auth::check() && (Auth::user()->hasAnyRole(['admin','user'])))
+                                            <li id="usun"><a id="usunZaznaczone" href="#">Usuń zaznaczone</a></li>
+                                            @endif
                                         </ul>
                                     </div></th>
                                 <th>Odbiorca</th>
@@ -114,7 +123,7 @@ $(document).ready(function () {
                             </tr>
                         </thead>
                         <tbody>
-
+                            @if (Auth::check()&& Auth::user()->hasAnyRole(['admin','user']) && Auth::user()->hasPermissionTo('view payments'))
                             @foreach($payment as $post)
                             <tr>
                                 <td><input type="checkbox" name="check" id="check{{$post['payment_id']}}"/></td>
@@ -124,11 +133,14 @@ $(document).ready(function () {
                                 @if($post->status === 'zatwierdzona')
                                 <td style="color:#00ccff;">{{$post['status']}}</td> @else
                                 <td>{{$post['status']}}</td>@endif
-                                <td><a href="{{ route('admineditpayment',$post->payment_id) }}"> Edytuj </a>
+                                <td>
+                                    @if (Auth::check()&& Auth::user()->hasRole('admin'))
+                                    <a href="{{ route('adminEditPayment',$post->payment_id) }}"> Edytuj </a>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach
-
+                            @endif
                         </tbody>
                     </table>
                     <div>{{ $pagination }} </div>

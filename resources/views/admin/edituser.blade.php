@@ -14,7 +14,7 @@ $(document).ready(function () {
 $.ajaxSetup({
 headers: {
 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        }
+}
 });
         var button = document.getElementById('role');
         button.addEventListener("click", pokaz);
@@ -25,27 +25,29 @@ headers: {
                 button.removeAttribute('id', 'role');
                 button.setAttribute('id', 'save');
                 var button2 = document.getElementById('save');
-                button2.addEventListener("click", saverole);
-                function saverole() {
-                var idrole = document.getElementById('rolelist').value;
+                button2.addEventListener("click", saveRole);
+                function saveRole() {
+                var idrole = document.getElementById('roleList').value;
                         $.ajax({
                         type: "POST",
-                                url: '{{url::to("saverole")}}',
+                                url: '{{url::to("saveRole")}}',
                                 async: true,
                                 data: {
                                 role: idrole, user: {{ $user['user_id']}}
                                 },
                                 success: function (ret) {
+                                if (ret == 'success'){
                                 alert('Rola została dodana pomyślnie!');
+                                }
                                 },
                                 complete: function () {
                                 location.reload();
                                 },
                                 error: function (jqXHR, errorText, errorThrown) {
-                                alert('error!');
+
                                 }
                         });
-                        }
+                }
         }
 
 
@@ -58,8 +60,13 @@ headers: {
         <div class="col-md-8 col-md-offset-2">
             <div class="panel panel-default">
                 <div class="panel-heading">Edycja</div>
-                <div class="panel-body">
-                    <form class="form-horizontal" method="POST" action="{{ url('edituser') }}">
+               <div class="panel-body">
+                    @if (session('message'))
+                    <div class="alert alert-danger">
+                        {{ session('message') }}
+                    </div>
+                    @endif
+                    <form class="form-horizontal" method="POST" action="{{ url('editUser') }}">
                         {{ csrf_field() }}
                         <input id="user_id" type="hidden" name="user_id" value="{{ $user['user_id']}}" required autofocus>
                         <input type="hidden" name="pass" value="{{ $user['password']}}" required autofocus>
@@ -125,11 +132,13 @@ headers: {
                     <div>
                         <button type="submit" onClick="location.href = '{{ url('users') }}'" class="btn btn-primary" style="position:absolute; margin-left:67%; margin-top:-6.5%;">Anuluj</button>
                     </div>
+                    @if (Auth::check()&& Auth::user()->hasRole('admin'))
                     <div>
                         <button type="submit" onClick="" id="role" class="btn btn-primary" style="position:absolute; margin-left:47%; margin-top:-6.5%;">Przydziel rolę</button>
                     </div>
+                    @endif
                     <div id="list" hidden="true">
-                        <select class="form-control" name="rolelist" id="rolelist" style="">
+                        <select class="form-control" name="roleList" id="roleList" style="">
                             <option value="0">Użytkownik</option>
                             <option value="1">Administrator</option>
                         </select>

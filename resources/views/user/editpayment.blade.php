@@ -9,7 +9,7 @@
             <div class="panel panel-default">
                 <div class="panel-heading">Edycja</div>
                 <div class="panel-body">
-                    <form class="form-horizontal" method="POST" action="{{ url('editpayment') }}">
+                    <form class="form-horizontal" method="POST" action="{{ url('editPayment') }}">
                         {{ csrf_field() }}
                         <input id="payment_id" type="hidden" name="payment_id" value="{{ $payment['payment_id']}}" required autofocus>
                         <div class="form-group{{ $errors->has('client') ? ' has-error' : '' }}">

@@ -6,67 +6,89 @@ use Illuminate\Http\Request;
 use App\Payment;
 use App\Expenses;
 use App\User;
+use App\Policies\PaymentPolicy;
+use App\Policies\ExpensesPolicy;
+use App\Policies\UserPolicy;
 use App\Http\Controllers\Controller;
 
 class AjaxController extends Controller {
 
-    public function deletepayment(Request $r) {
-        $data = $r->all();
-        $id = $data['data'];
-        for ($i = 0; $i < Count($id); $i++) {
-            
-            $idexpenses = session()->get('expense');
-            $pay = Payment::whereIn('payment_id', [$id[$i]])->get();
-            $amount = $pay[0]->amount;
+    public function __construct() {
+        $this->userModel = new User();
+        $this->expensesModel = new Expenses();
+        $this->paymentModel = new Payment();
+        $this->paymentPolicy = new PaymentPolicy();
+        $this->expensesPolicy = new ExpensesPolicy();
+        $this->userPolicy = new UserPolicy();
+    }
 
-            if (app('App\Http\Controllers\ExpensesController')->editamountdec($idexpenses, $amount)) {
-                $payment = Payment::whereIn('payment_id', [$id[$i]])->delete();
+    public function deletePayment(Request $r) {
+        if ($this->paymentPolicy->delete($this->userModel->getUserAuth())) {
+            $data = $r->all();
+            $id = $data['data'];
+            for ($i = 0; $i < Count($id); $i++) {
+                $expenseId = session()->get('expense');
+                $amount = $this->paymentModel->getPayment($id[$i])->get()[0]->amount;
+                if ($this->expensesModel->editAmountDec($expenseId, $amount, $this->expensesModel->getExpense($expenseId)->get()[0]->amount)) {
+                    $payment = $this->paymentModel->getPayment($id[$i])->get()[0]->delete();
+                }
             }
+            return response(['success']);
         }
-        return response(['success']);
+        session()->flash('message', 'Nie posiadasz uprawnień, aby usunąć płatność!');
+        return response(['error']);
     }
 
-    public function deleteexpense(Request $r) {
-        
-        $data = $r->all();
-        $id = $data['data'];
-        
-        for ($i = 0; $i < Count($id); $i++) {
-            
-            $payments = Payment::whereIn('expenses_id', [$id[$i]])->delete();
-            $expense = Expenses::whereIn('expenses_id', [$id[$i]])->delete();
-        }
-        return response(['success']);
-    }
-
-    public function deleteuser(Request $r) {
-        
-        $data = $r->all();
-        $id = $data['data'];
-        
-        for ($i = 0; $i < Count($id); $i++) {
-            $expenses = Expenses::whereIn('user_id', [$id[$i]])->get();
-            
-            foreach ($expenses as $ex) {
-                
-                $payments = Payment::whereIn('expenses_id', [$ex->expenses_id])->delete();
-                $ex->delete();
+    public function deleteExpense(Request $r) {
+        if ($this->expensesPolicy->delete($this->userModel->getUserAuth())) {
+            $data = $r->all();
+            $id = $data['data'];
+            for ($i = 0; $i < Count($id); $i++) {
+                $payments = $this->paymentModel->getPayments($id[$i])->get();
+                for ($j = 0; $j < Count($payments); $j++) {
+                    $payments[$j]->delete();
+                }
+                $this->expensesModel->getExpense($id[$i])->get()[0]->delete();
             }
-            $user = User::whereIn('user_id', [$id[$i]])->delete();
+            return response(['success']);
         }
-        return response(['success']);
+        session()->flash('message', 'Nie posiadasz uprawnień, aby usunąć wydatek!');
+        return response(['error']);
     }
 
-    public function saverole(Request $r) {
-        
-        $data = $r->all();
-        $role = $data['role'];
-        $user = $data['user'];
-        
-        $date = date_create('now')->format("Y-m-d H:i:s");
-        User::updateOrCreate(['user_id' => [$user]], ['isadmin' => $role,
-            'update_at' => $date,]);
-        return response(['success']);
+    public function deleteUser(Request $r) {
+        if ($this->userPolicy->delete($this->userModel->getUserAuth())) {
+            $data = $r->all();
+            $id = $data['data'];
+
+            for ($i = 0; $i < Count($id); $i++) {
+                $expenses = $this->expensesModel->getExpenses($id[$i])->get();
+
+                for ($e = 0; $e < Count($expenses); $e++) {
+                    $payments = $this->paymentModel->getPayments($expenses[$e]->expenses_id)->get();
+                    for ($j = 0; $j < Count($payments); $j++) {
+                        $payments[$j]->delete();
+                    }
+                    $expenses[$e]->delete();
+                }
+                $this->userModel->getUser($id[$i])->get()[0]->delete();
+            }
+            return response(['success']);
+        }
+        session()->flash('message', 'Nie posiadasz uprawnień, aby usunąć użytkownika!');
+        return response(['error']);
+    }
+
+    public function saveRole(Request $r) {
+        if ($this->userPolicy->role($this->userModel->getUserAuth())) {
+            $data = $r->all();
+            $role = $data['role'];
+            $user = $data['user'];
+            $this->userModel->editUserRole($role, $user);
+            return response(['success']);
+        }
+        session()->flash('message', 'Nie posiadasz uprawnień, aby dodać rolę użytkownikowi!');
+        return response(['error']);
     }
 
 }

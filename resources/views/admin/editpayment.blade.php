@@ -9,7 +9,7 @@
             <div class="panel panel-default">
                 <div class="panel-heading">Edycja</div>
                 <div class="panel-body">
-                    <form class="form-horizontal" method="POST" action="{{ url('admineditpayment') }}">
+                    <form class="form-horizontal" method="POST" action="{{ url('adminEditPayment') }}">
                         {{ csrf_field() }}
                         <input id="payment_id" type="hidden" name="payment_id" value="{{ $payment['payment_id']}}" required autofocus>
                         <div class="form-group{{ $errors->has('client') ? ' has-error' : '' }}">
@@ -64,6 +64,7 @@
                             </div>
                         </div>
                         
+                        @if (Auth::check()&& Auth::user()->hasRole('admin') && Auth::user()->hasPermissionTo('accept payment'))
                         <div class="form-group{{ $errors->has('status') ? ' has-error' : '' }}">
                             <label for="status" class="col-md-4 control-label">Status</label>
 
@@ -87,7 +88,8 @@
                                 @endif
                             </div>
                         </div>
-
+                        @endif
+                        
                         <div class="form-group">
                             <div class="col-md-8 col-md-offset-4">
                                 <button type="submit" class="btn btn-primary">
@@ -97,7 +99,7 @@
                         </div>
                     </form>
                     <div style="">
-                        <button type="submit" onClick="location.href = '{{ url('adminpayment',$payment->expenses_id) }}'" class="btn btn-primary" style="position:absolute; margin-left:67%; margin-top:-6.5%;">Anuluj</button>
+                        <button type="submit" onClick="location.href = '{{ url('adminPayment',$payment->expenses_id) }}'" class="btn btn-primary" style="position:absolute; margin-left:67%; margin-top:-6.5%;">Anuluj</button>
                     </div>
 
                 </div>

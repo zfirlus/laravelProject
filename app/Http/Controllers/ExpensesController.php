@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Expenses;
 use App\User;
+use App\Payment;
+use App\Policies\ExpensesPolicy;
 use Illuminate\Http\Request;
 
 class ExpensesController extends Controller {
@@ -13,14 +15,21 @@ class ExpensesController extends Controller {
      *
      * @return \Illuminate\Http\Response
      */
+    public function __construct() {
+        $this->userModel = new User();
+        $this->expensesModel = new Expenses();
+        $this->paymentModel = new Payment();
+        $this->expensesPolicy = new ExpensesPolicy();
+    }
+    
     public function index($id, $role) {
 
         if ($role === 0) {
 
-            $expenses = Expenses::whereIn('user_id', [$id])->get();
+            $expenses = $this->expensesModel->getExpenses($id)->get();
             foreach ($expenses as $exp) {
-                $payments = app('App\Http\Controllers\PaymentController')->getall($exp->expenses_id);
-
+                
+                $payments = $this->paymentModel->getPayments($exp->expenses_id)->get();
                 if (Count($payments) === 0) {
                     return $expenses;
                 } else {
@@ -34,61 +43,57 @@ class ExpensesController extends Controller {
                     }
                     if ($i > 0) {
                         $exp->status = 'block';
-                    } 
+                    }
                 }
             }
             return $expenses;
         }
         if ($role === 1) {
-            $expenses = Expenses::all();
+            $expenses = $this->expensesModel->getAll();
             return $expenses;
         }
     }
 
-    public function editform($expenses_id) {
-        $expenses = Expenses::whereIn('expenses_id', [$expenses_id])->get();
-        $expense = $expenses[0];
+    public function editForm($expenses_id) {
+        
+        $expense = $this->expensesModel->getExpense($expenses_id)->get()[0];
+        
         return View('user.editexpense', compact('expense'));
     }
 
     public function edit(Request $request) {
+        
+        if ($this->expensesPolicy->update($this->userModel->getUserAuth())) {
+            $id = $this->userModel->getUserAuth();
+            
+            $list = $this->expensesModel->getExpenses($id)->get();
+            $i = 0;
 
-        $id = \Illuminate\Support\Facades\Auth::user()->user_id;
-        $list = Expenses::whereIn('user_id', [$id])->get();
-        $i = 0;
-
-        foreach ($list as $l) {
-            if ($l->name === $request['name']) {
-                $i++;
+            foreach ($list as $l) {
+                if ($l->name === $request['name']) {
+                    $i++;
+                }
             }
-        }
-        $messages = [
-            'name.max' => 'Nazwa nie może przekraczać 30 znaków!',
-            'name.min' => 'Nazwa musi mieć przynajmniej 3 znaki!',
-            'name.required' => 'Pole nie może być puste!',
-            'uniquename' => 'Posiadasz już wydatki o takiej nazwie!',
-        ];
+            $messages = [
+                'name.max' => 'Nazwa nie może przekraczać 30 znaków!',
+                'name.min' => 'Nazwa musi mieć przynajmniej 3 znaki!',
+                'name.required' => 'Pole nie może być puste!',
+                'uniquename' => 'Posiadasz już wydatki o takiej nazwie!',
+            ];
 
-        $this->validate($request, [
-            'name' => 'min:3|required|string|max:30|uniquename:' . $i,
-                ], $messages);
-
-        $date = date_create('now')->format("Y-m-d H:i:s");
-
-        Expenses::updateOrCreate(['expenses_id' => [$request->expenses_id]], ['name' => $request['name'],
-            'update_at' => $date,]);
-
-        $id = \Illuminate\Support\Facades\Auth::user()->user_id;
-        $user = User::find($id);
-
-        if ($user->isadmin === 1) {
-            return redirect()->route('home');
-        } else {
+            $this->validate($request, [
+                'name' => 'min:3|required|string|max:30|uniquename:' . $i,
+                    ], $messages);
+            $this->expensesModel->editExpense($request);
+            
             return redirect()->route('home');
         }
+        
+        session()->flash('message', 'Nie posiadasz uprawnień, aby edytować wydatek!');
+        return redirect()->route('home');
     }
 
-    public function createform() {
+    public function createForm() {
         return View('user.newexpense');
     }
 
@@ -98,38 +103,33 @@ class ExpensesController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function create(Request $request) {
+        if ($this->expensesPolicy->create($this->userModel->getUserAuth())) {
+            $id = $this->userModel->getUserAuth();
+            $list = $this->expensesModel->getExpenses($id)->get();
+            $i = 0;
 
-        $id = \Illuminate\Support\Facades\Auth::user()->user_id;
-        $list = Expenses::whereIn('user_id', [$id])->get();
-        $i = 0;
-
-        foreach ($list as $l) {
-            if ($l->name === $request['name']) {
-                $i++;
+            foreach ($list as $l) {
+                if ($l->name === $request['name']) {
+                    $i++;
+                }
             }
+
+            $messages = [
+                'name.max' => 'Nazwa nie może przekraczać 30 znaków!',
+                'name.min' => 'Nazwa musi mieć przynajmniej 3 znaki!',
+                'name.required' => 'Pole nie może być puste!',
+                'uniquename' => 'Posiadasz już wydatki o takiej nazwie!',
+            ];
+
+            $this->validate($request, [
+                'name' => 'min:3|required|string|max:30|uniquename:' . $i,
+                    ], $messages);
+
+            $this->expensesModel->createExpense($request, $id);
+            
+            return redirect()->route('home');
         }
-
-        $messages = [
-            'name.max' => 'Nazwa nie może przekraczać 30 znaków!',
-            'name.min' => 'Nazwa musi mieć przynajmniej 3 znaki!',
-            'name.required' => 'Pole nie może być puste!',
-            'uniquename' => 'Posiadasz już wydatki o takiej nazwie!',
-        ];
-
-        $this->validate($request, [
-            'name' => 'min:3|required|string|max:30|uniquename:' . $i,
-                ], $messages);
-
-        $date = date_create('now')->format("Y-m-d H:i:s");
-
-        $user = \Illuminate\Support\Facades\Auth::user()->user_id;
-
-        Expenses::create([
-            'name' => $request['name'],
-            'amount' => '0',
-            'user_id' => $user,
-            'created_at' => $date,
-        ]);
+        session()->flash('message', 'Nie posiadasz uprawnień, aby dodać wydatek!');
         return redirect()->route('home');
     }
 
@@ -151,28 +151,6 @@ class ExpensesController extends Controller {
      */
     public function show(Expenses $expenses) {
         //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Expenses  $expenses
-     * @return \Illuminate\Http\Response
-     */
-    public function editamount($id, $amount) {
-
-        $expense = Expenses::whereIn('expenses_id', [$id])->get();
-        Expenses::updateOrCreate(['expenses_id' => [$id]], ['amount' => $expense[0]->amount += $amount]);
-
-        return true;
-    }
-
-    public function editamountdec($id, $amount) {
-
-        $expense = Expenses::whereIn('expenses_id', [$id])->get();
-        Expenses::updateOrCreate(['expenses_id' => [$id]], ['amount' => $expense[0]->amount -= $amount]);
-
-        return true;
     }
 
     /**

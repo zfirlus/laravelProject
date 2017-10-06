@@ -18,9 +18,9 @@ headers: {
         }
 });
 //zaznacz wszystkie
-var guzik_wszystkie = document.getElementById('zaznacz_wszystkie');
-guzik_wszystkie.addEventListener('click', zaznacz_wszystkie);
-function zaznacz_wszystkie() {
+var guzikWszystkie = document.getElementById('zaznaczWszystkie');
+guzikWszystkie.addEventListener('click', zaznaczWszystkie);
+function zaznaczWszystkie() {
 var checksy = document.getElementsByName('check');
 for (var i = 0; i < checksy.length; i++) {
 if (checksy[i].getAttribute('disabled') !== 'disabled'){
@@ -28,9 +28,9 @@ checksy[i].checked = true; }
 }
 }
 //odznacz
-var guzik_odznacz = document.getElementById('odznacz');
-guzik_odznacz.addEventListener('click', odznacz_zaznaczone);
-function odznacz_zaznaczone() {
+var guzikOdznacz = document.getElementById('odznacz');
+guzikOdznacz.addEventListener('click', odznaczZaznaczone);
+function odznaczZaznaczone() {
 var checksy = document.getElementsByName('check');
 for (var i = 0; i < checksy.length; i++) {
 if (checksy[i].checked) {
@@ -39,9 +39,9 @@ checksy[i].checked = false;
 }
 }
 //usuwanie
-var guzik_usun = document.getElementById('usun_zaznaczone');
-guzik_usun.addEventListener('click', usun_zaznaczone);
-function usun_zaznaczone() {
+var guzikUsun = document.getElementById('usunZaznaczone');
+guzikUsun.addEventListener('click', usunZaznaczone);
+function usunZaznaczone() {
 var zaznaczone = new Array();
 var j = 0;
 var checksy = document.getElementsByName('check');
@@ -60,19 +60,21 @@ zaz2[j] = zaznaczone[j].substring(5);
 
 $.ajax({
 type: "POST",
-        url: '{{url::to("deleteuser")}}',
+        url: '{{url::to("deleteUser")}}',
         async: true,
         data: {
         data: zaz2
         },
         success: function (ret) {
+        if (ret == 'success'){
         alert('Użytkownik został usunięty pomyślnie!');
+        }
         },
         complete: function () {
         location.reload();
         },
         error: function (jqXHR, errorText, errorThrown) {
-        alert('error!');
+
         }
 });
 }
@@ -89,6 +91,12 @@ alert('nic nie zaznaczyłes!');
                 <div class="panel-heading">Lista użytkowników</div>
 
                 <div class="panel-body">
+                    @if (session('message'))
+                    <div class="alert alert-danger">
+                        {{ session('message') }}
+                    </div>
+                    @endif
+
                     <table class="table table-striped">
                         <thead>
                             <tr>
@@ -100,9 +108,11 @@ alert('nic nie zaznaczyłes!');
                                         </button>
                                         <ul class="dropdown-menu">
                                             <li><a id="odznacz" href="#">Odznacz</a></li>
-                                            <li><a id="zaznacz_wszystkie" href="#">Zaznacz wszystkie</a></li>
+                                            <li><a id="zaznaczWszystkie" href="#">Zaznacz wszystkie</a></li>
                                             <li role="separator" class="divider"></li>
-                                            <li id="usun"><a id="usun_zaznaczone" href="#">Usuń zaznaczone</a></li>
+                                            @if (Auth::check()&& Auth::user()->hasRole('admin'))
+                                            <li id="usun"><a id="usunZaznaczone" href="#">Usuń zaznaczone</a></li>
+                                            @endif
                                         </ul>
                                     </div></th>
                                 <th>Email</th>
@@ -111,23 +121,27 @@ alert('nic nie zaznaczyłes!');
                             </tr>
                         </thead>
                         <tbody>
-
+                            @if (Auth::check()&& Auth::user()->hasRole('admin') && Auth::user()->hasPermissionTo('view users'))    
                             @foreach($users as $post)
                             <tr>
                                 <td>@if($post->user_id === $id)<input type="checkbox" name="check" id="check{{$post['user_id']}}" disabled="disabled"/>
                                     @else <input type="checkbox" name="check" id="check{{$post['user_id']}}"/> @endif</td>
                                 <td>{{$post['email']}}</td>
                                 <td>@if($post->isadmin === 1)Administrator @else Użytkownik @endif</td>
-                                <td><a href="{{ route('edituser',$post->user_id) }}"> Edytuj </a></td>
-                            
+                                <td>@if (Auth::check()&& Auth::user()->hasRole('admin'))
+                                    <a href="{{ route('editUser',$post->user_id) }}"> Edytuj </a>@endif
+                                </td>
+
                             </tr>
                             @endforeach
-
+                            @endif
                         </tbody>
                     </table>
                     <div>{{ $pagination }} </div>
                     <div>
-                        <button type="submit" onClick="location.href = '{{ url('newuser') }}'" class="btn btn-primary" >Dodaj użytkownika</button>
+                        @if (Auth::check()&& Auth::user()->hasRole('admin'))
+                        <button type="submit" onClick="location.href = '{{ url('newUser') }}'" class="btn btn-primary" >Dodaj użytkownika</button>
+                        @endif
                         <button type="submit" onClick="location.href = '{{ url('/') }}'" class="btn btn-primary" style="position:absolute; margin-left:65%; margin-top: -0%;">Wróć</button>
                     </div>
 

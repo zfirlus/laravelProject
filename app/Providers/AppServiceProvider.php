@@ -15,7 +15,7 @@ class AppServiceProvider extends ServiceProvider {
      * @return void
      */
     public function boot() {
-        Schema::defaultStringLength(500);
+        Schema::defaultStringLength(191);
         Validator::extend('equal', function($attribute, $value, $parameters) {
             
             if(!Hash::check($parameters[0], $parameters[1])){

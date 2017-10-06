@@ -20,4 +20,12 @@ class Status extends Model {
        'status_id','remember_token',
     ];
 
+    public function scopeStatus($query, $id) {
+        return $query->where('status_id', '=', $id);
+    }
+    
+    public function getAll(){
+        return Status::all();
+    }
+
 }

@@ -118,6 +118,7 @@ return [
         /*
          * Laravel Framework Service Providers...
          */
+        
         Appstract\BootstrapComponents\BootstrapComponentsServiceProvider::class,
         Collective\Html\HtmlServiceProvider::class,
         Illuminate\Auth\AuthServiceProvider::class,
@@ -142,6 +143,7 @@ return [
         Illuminate\Translation\TranslationServiceProvider::class,
         Illuminate\Validation\ValidationServiceProvider::class,
         Illuminate\View\ViewServiceProvider::class,
+        Spatie\Permission\PermissionServiceProvider::class,
         /*
          * Package Service Providers...
          */

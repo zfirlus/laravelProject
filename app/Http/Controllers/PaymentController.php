@@ -6,9 +6,18 @@ use App\Payment;
 use App\Status;
 use App\Expenses;
 use App\User;
+use App\Policies\PaymentPolicy;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller {
+
+    public function __construct() {
+        $this->paymentModel = new Payment();
+        $this->userModel = new User();
+        $this->expensesModel = new Expenses();
+        $this->statusModel = new Status();
+        $this->paymentPolicy = new PaymentPolicy();
+    }
 
     /**
      * Display a listing of the resource.
@@ -16,17 +25,12 @@ class PaymentController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function index() {
-        
-        $id = \Illuminate\Support\Facades\Auth::user()->user_id;
-        $expenses = Expenses::whereIn('user_id', [$id])->get();
-        $expense_id = session()->get('expense');
-        
-        return View('user.newpayment', compact('expenses', 'expense_id'));
-    }
 
-    public function getall($id) {
-        $payments = Payment::whereIn('expenses_id', [$id])->get();
-        return $payments;
+        $id = $this->userModel->getUserAuth();
+        $expenses = $this->expensesModel->getExpenses($id)->get();
+        $expense_id = session()->get('expense');
+
+        return View('user.newpayment', compact('expenses', 'expense_id'));
     }
 
     /**
@@ -35,37 +39,33 @@ class PaymentController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function create(Request $request) {
-        
-        $messages = [
-            'client.required' => 'To pole nie może być puste!',
-            'client.min' => 'Odbiorca musi zawierać conajmniej 3 znaki!',
-            'client.max' => 'Odbiorca nie może przekraczać 30 znaków',
-            'amount.required' => 'To pole nie może być puste!',
-            'amount.min' => 'Kwota musi być równa conajmniej 1!',
-            'amount.max' => 'Wprowadzona kwota jest zbyt duża!',
-            'numeric' => 'Niepoprawna kwota!'
-        ];
-        
-        $this->validate($request, [
-            'client' => 'required|min:3|string|max:30',
-            'amount' => 'required|min:1|numeric|max:999999,99',
-                ], $messages);
-        
-        $date = date_create('now')->format("Y-m-d H:i:s");
-        
-        Payment::create([
-            'status_id' => '1',
-            'expenses_id' => Value($request['expenses']),
-            'created_at' => $date,
-            'client' => $request['client'],
-            'amount' => $request['amount'],
-        ]);
-        
-        $id = session()->get('expense');
-        
-        if (app('App\Http\Controllers\ExpensesController')->editamount(Value($request['expenses']), $request['amount'])) {
-            return $this::payments($id);
+        if ($this->paymentPolicy->create($this->userModel->getUserAuth())) {
+            $messages = [
+                'client.required' => 'To pole nie może być puste!',
+                'client.min' => 'Odbiorca musi zawierać conajmniej 3 znaki!',
+                'client.max' => 'Odbiorca nie może przekraczać 30 znaków',
+                'amount.required' => 'To pole nie może być puste!',
+                'amount.min' => 'Kwota musi być równa conajmniej 1!',
+                'amount.max' => 'Wprowadzona kwota jest zbyt duża!',
+                'numeric' => 'Niepoprawna kwota!'
+            ];
+
+            $this->validate($request, [
+                'client' => 'required|min:3|string|max:30',
+                'amount' => 'required|min:1|numeric|max:999999,99',
+                    ], $messages);
+
+            $this->paymentModel->createPayment($request);
+
+            $id = session()->get('expense');
+            $oldAmount = $this->expensesModel->getExpense(Value($request['expenses']))->get()[0]->amount;
+
+            if ($this->expensesModel->editAmount(Value($request['expenses']), $request['amount'], $oldAmount)) {
+                return $this::payments($id);
+            }
         }
+        session()->flash('message', 'Nie posiadasz uprawnień, aby dodać nową płatność!');
+        return $this::payments(session()->get('expense'));
     }
 
     /**
@@ -75,44 +75,51 @@ class PaymentController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request) {
-        $payment = Payment::whereIn('expenses_id', [$request->expenses_id])->get();
-        $status = Status::all();
+        if ($this->paymentPolicy->view($this->userModel->getUserAuth())) {
+            $payments = $this->paymentModel->getPayments($request->expenses_id)->get();
+            $status = $this->statusModel->getAll();
 
-        foreach ($payment as $p) {
-            foreach ($status as $s) {
-                if ($p->status_id === $s->status_id) {
-                    $p->status = $s->name;
+            foreach ($payments as $p) {
+                foreach ($status as $s) {
+                    if ($p->status_id === $s->status_id) {
+                        $p->status = $s->name;
+                    }
                 }
             }
+            session()->put('expense', $request->expenses_id);
+            $page = $request->get('page', 1);
+            $perPage = 4;
+
+            return view('user.payment', [
+                'payment' => $payments->forPage($page, $perPage),
+                'pagination' => \BootstrapComponents::pagination($payments, $page, $perPage, '', ['arrows' => true]),
+            ]);
         }
-        session()->put('expense', $request->expenses_id);
-        $page = $request->get('page', 1);
-        $perPage = 4;
-        
+
+        session()->flash('message', 'Nie posiadasz uprawnień, aby wyświetlić listę płatności!');
         return view('user.payment', [
-            'payment' => $payment->forPage($page, $perPage),
-            'pagination' => \BootstrapComponents::pagination($payment, $page, $perPage, '', ['arrows' => true]),
+            'pagination' => \BootstrapComponents::pagination(null, 0, 4, '', ['arrows' => true]),
         ]);
     }
 
     public function payments($id) {
-        $payment = Payment::whereIn('expenses_id', [$id])->get();
-        $status = Status::all();
+        $payments = $this->paymentModel->getPayments($id)->get();
+        $status = $this->statusModel->getAll();
 
-        foreach ($payment as $p) {
+        foreach ($payments as $p) {
             foreach ($status as $s) {
                 if ($p->status_id === $s->status_id) {
                     $p->status = $s->name;
                 }
             }
         }
-        $idd = \Illuminate\Support\Facades\Auth::user()->user_id;
-        $user = User::whereIn('user_id', [$idd])->get();
-        
-        if ($user[0]->isadmin === 0) {
-            return redirect()->route('payment',$id);
+
+        $user = $this->userModel->getUser($this->userModel->getUserAuth())->get()[0];
+
+        if ($user->isAdmin === 0) {
+            return redirect()->route('payment', $id);
         } else {
-            return redirect()->route('adminpayment',$id);
+            return redirect()->route('adminPayment', $id);
         }
     }
 
@@ -123,25 +130,31 @@ class PaymentController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function show(Request $request) {
-        $payment = Payment::whereIn('expenses_id', [$request->expenses_id])->get();
-        $status = Status::all();
+        if ($this->paymentPolicy->view($this->userModel->getUserAuth())) {
+            $payments = $this->paymentModel->getPayments($request->expenses_id)->get();
+            $status = $this->statusModel->getAll();
 
-        foreach ($payment as $p) {
-            foreach ($status as $s) {
-                if ($p->status_id === $s->status_id) {
-                    $p->status = $s->name;
+            foreach ($payments as $p) {
+                foreach ($status as $s) {
+                    if ($p->status_id === $s->status_id) {
+                        $p->status = $s->name;
+                    }
                 }
             }
-        }
-        session()->put('expense', $request->expenses_id);
-        
-        $page = $request->get('page', 1);
-        $perPage = 4;
-        
-        return view('admin.payment', [
-                'payment' => $payment->forPage($page, $perPage),
-                'pagination' => \BootstrapComponents::pagination($payment, $page, $perPage, '', ['arrows' => true]),
+            session()->put('expense', $request->expenses_id);
+
+            $page = $request->get('page', 1);
+            $perPage = 4;
+
+            return view('admin.payment', [
+                'payment' => $payments->forPage($page, $perPage),
+                'pagination' => \BootstrapComponents::pagination($payments, $page, $perPage, '', ['arrows' => true]),
             ]);
+        }
+        session()->flash('message', 'Nie posiadasz uprawnień, aby wyświetlić listę płatności!');
+        return view('admin.payment', [
+            'pagination' => \BootstrapComponents::pagination(null, 0, 4, '', ['arrows' => true]),
+        ]);
     }
 
     /**
@@ -151,150 +164,132 @@ class PaymentController extends Controller {
      * @return \Illuminate\Http\Response
      */
     public function edit(Request $request) {
-        
-        $messages = [
-            'client.required' => 'To pole nie może być puste!',
-            'client.min' => 'Odbiorca musi zawierać conajmniej 3 znaki!',
-            'client.max' => 'Odbiorca nie może przekraczać 30 znaków',
-            'amount.required' => 'To pole nie może być puste!',
-            'amount.min' => 'Kwota musi być równa conajmniej 1!',
-            'amount.max' => 'Wprowadzona kwota jest zbyt duża!',
-            'numeric' => 'Niepoprawna kwota!'
-        ];
-        
-        $this->validate($request, [
-            'client' => 'required|min:3|string|max:30',
-            'amount' => 'required|min:1|numeric|max:999999.99',
-                ], $messages);
-        
-        $date = date_create('now')->format("Y-m-d H:i:s");
-        
-        $payment = Payment::whereIn('payment_id', [$request->payment_id])->get();
-        $amount = $payment[0]->amount;
-        
-        Payment::updateOrCreate(['payment_id' => [$request->payment_id]], ['expenses_id' => Value($request['expenses']),
-            'update_at' => $date, 'client' => $request['client'], 'amount' => $request['amount']]);
+        if ($this->paymentPolicy->update($this->userModel->getUserAuth())) {
+            $messages = [
+                'client.required' => 'To pole nie może być puste!',
+                'client.min' => 'Odbiorca musi zawierać conajmniej 3 znaki!',
+                'client.max' => 'Odbiorca nie może przekraczać 30 znaków',
+                'amount.required' => 'To pole nie może być puste!',
+                'amount.min' => 'Kwota musi być równa conajmniej 1!',
+                'amount.max' => 'Wprowadzona kwota jest zbyt duża!',
+                'numeric' => 'Niepoprawna kwota!'
+            ];
 
-        $id = session()->get('expense');
-        
-        if ($amount > $request->amount) {
-            
-            $value = $amount - $request->amount;
-            if (Value($request['expenses']) !== $payment[0]->expenses_id) {
-                $oldexpense = app('App\Http\Controllers\ExpensesController')->editamountdec($payment[0]->expenses_id, $amount);
-                $newexpense = app('App\Http\Controllers\ExpensesController')->editamount(Value($request['expenses']), $request['amount']);
-            } else {
-                $oldexpense = app('App\Http\Controllers\ExpensesController')->editamountdec($id, $value);
+            $this->validate($request, [
+                'client' => 'required|min:3|string|max:30',
+                'amount' => 'required|min:1|numeric|max:999999.99',
+                    ], $messages);
+
+            $payment = $this->paymentModel->getPayment($request->payment_id)->get()[0];
+            $amount = $payment->amount;
+
+            $this->paymentModel->editPayment($request);
+            $id = session()->get('expense');
+
+            if ($amount > $request->amount) {
+                $value = $amount - $request->amount;
+                if (Value($request['expenses']) !== $payment->expenses_id) {
+                    $oldExpense = $this->expensesModel->editAmountDec($payment->expenses_id, $amount, $this->expensesModel->getExpense($payment->expenses_id)->get()[0]->amount);
+                    $newExpense = $this->expensesModel->editAmount(Value($request['expenses']), $request['amount'], $this->expensesModel->getExpense(Value($request['expenses']))->get()[0]->amount);
+                } else {
+                    $oldExpense = $this->expensesModel->editAmountDec($payment->expenses_id, $value, $this->expensesModel->getExpense($payment->expenses_id)->get()[0]->amount);
+                }
+                return $this::payments(session()->get('expense'));
             }
-            return $this::payments($id);
-        }
-        
-        if ($amount < $request->amount) {
-            $value = $request->amount - $amount;
-            
-            if (Value($request['expenses']) !== $payment[0]->expenses_id) {
-                
-                $oldexpense = app('App\Http\Controllers\ExpensesController')->editamountdec($payment[0]->expenses_id, $amount);
-                $newexpense = app('App\Http\Controllers\ExpensesController')->editamount(Value($request['expenses']), $request['amount']);
-            } else {
-                $oldexpense = app('App\Http\Controllers\ExpensesController')->editamount($id, $value);
+
+            if ($amount < $request->amount) {
+                $value = $request->amount - $amount;
+                if (Value($request['expenses']) !== $payment->expenses_id) {
+                    $oldExpense = $this->expensesModel->editAmountDec($payment->expenses_id, $amount, $this->expensesModel->getExpense($payment->expenses_id)->get()[0]->amount);
+                    $newExpense = $this->expensesModel->editAmount(Value($request['expenses']), $request['amount'], $this->expensesModel->getExpense(Value($request['expenses']))->get()[0]->amount);
+                } else {
+                    $oldExpense = $this->expensesModel->editAmount($payment->expenses_id, $value, $this->expensesModel->getExpense($payment->expenses_id)->get()[0]->amount);
+                }
+                return $this::payments($id);
             }
-            return $this::payments($id);
-        }
-        
-        if ($amount == $request->amount) {
-            if (Value($request['expenses']) !== $payment[0]->expenses_id) {
-                
-                $oldexpense = app('App\Http\Controllers\ExpensesController')->editamountdec($payment[0]->expenses_id, $amount);
-                $newexpense = app('App\Http\Controllers\ExpensesController')->editamount(Value($request['expenses']), $request['amount']);
+
+            if ($amount == $request->amount && Value($request['expenses']) !== $payment->expenses_id) {
+
+                $oldExpense = $this->expensesModel->editAmountDec($payment->expenses_id, $amount, $this->expensesModel->getExpense($payment->expenses_id)->get()[0]->amount);
+                $newExpense = $this->expensesModel->editAmount(Value($request['expenses']), $request['amount'], $this->expensesModel->getExpense(Value($request['expenses']))->get()[0]->amount);
+
+                return $this::payments($id);
             }
-            return $this::payments($id);
         }
+        session()->flash('message', 'Nie posiadasz uprawnień, aby edytować płatność!');
+        return $this::payments(session()->get('expense'));
     }
 
-    public function adminedit(Request $request) {
-        
-        $messages = [
-            'client.required' => 'To pole nie może być puste!',
-            'client.min' => 'Odbiorca musi zawierać conajmniej 3 znaki!',
-            'client.max' => 'Odbiorca nie może przekraczać 30 znaków',
-            'amount.required' => 'To pole nie może być puste!',
-            'amount.min' => 'Kwota musi być równa conajmniej 1!',
-            'numeric' => 'Niepoprawna kwota!'
-        ];
-        
-        $this->validate($request, [
-            'client' => 'required|min:3|string|max:30',
-            'amount' => 'required|min:1|numeric|max:99999999.99',
-                ], $messages);
-        
-        $date = date_create('now')->format("Y-m-d H:i:s");
-        $payment = Payment::whereIn('payment_id', [$request->payment_id])->get();
-        $amount = $payment[0]->amount;
-        
-        Payment::updateOrCreate(['payment_id' => [$request->payment_id]], ['status_id' => Value($request['status']), 'expenses_id' => Value($request['expenses']),
-            'update_at' => $date, 'client' => $request['client'], 'amount' => $request['amount']]);
+    public function adminEdit(Request $request) {
+        if ($this->paymentPolicy->update($this->userModel->getUserAuth())) {
+            $messages = [
+                'client.required' => 'To pole nie może być puste!',
+                'client.min' => 'Odbiorca musi zawierać conajmniej 3 znaki!',
+                'client.max' => 'Odbiorca nie może przekraczać 30 znaków',
+                'amount.required' => 'To pole nie może być puste!',
+                'amount.min' => 'Kwota musi być równa conajmniej 1!',
+                'numeric' => 'Niepoprawna kwota!'
+            ];
 
-        $id = session()->get('expense');
-        
-        if ($amount > $request->amount) {
-            $value = $amount - $request->amount;
-            
-            if (Value($request['expenses']) !== $payment[0]->expenses_id) {
-                
-                $oldexpense = app('App\Http\Controllers\ExpensesController')->editamountdec($payment[0]->expenses_id, $amount);
-                $newexpense = app('App\Http\Controllers\ExpensesController')->editamount(Value($request['expenses']), $request['amount']);
-            } 
-            else {
-                $oldexpense = app('App\Http\Controllers\ExpensesController')->editamountdec($id, $value);
+            $this->validate($request, [
+                'client' => 'required|min:3|string|max:30',
+                'amount' => 'required|min:1|numeric|max:99999999.99',
+                    ], $messages);
+
+            $payment = $this->paymentModel->getPayment($request->payment_id)->get()[0];
+            $amount = $payment->amount;
+
+            $this->paymentModel->editPaymentAdmin($request);
+            $id = session()->get('expense');
+
+            if ($amount > $request->amount) {
+                $value = $amount - $request->amount;
+                if (Value($request['expenses']) !== $payment->expenses_id) {
+                    $oldExpense = $this->expensesModel->editAmountDec($payment->expenses_id, $amount, $this->expensesModel->getExpense($payment->expenses_id)->get()[0]->amount);
+                    $newExpense = $this->expensesModel->editAmount(Value($request['expenses']), $request['amount'], $this->expensesModel->getExpense(Value($request['expenses']))->get()[0]->amount);
+                } else {
+                    $oldExpense = $this->expensesModel->editAmountDec($payment->expenses_id, $value, $this->expensesModel->getExpense($payment->expenses_id)->get()[0]->amount);
+                }
+                return $this::payments(session()->get('expense'));
             }
-            return $this::payments($id);
-        }
-        
-        if ($amount < $request->amount) {
-            
-            $value = $request->amount - $amount;
-            if (Value($request['expenses']) !== $payment[0]->expenses_id) {
-                
-                $oldexpense = app('App\Http\Controllers\ExpensesController')->editamountdec($payment[0]->expenses_id, $amount);
-                $newexpense = app('App\Http\Controllers\ExpensesController')->editamount(Value($request['expenses']), $request['amount']);
-            } 
-            else {
-                $oldexpense = app('App\Http\Controllers\ExpensesController')->editamount($id, $value);
+
+            if ($amount < $request->amount) {
+                $value = $request->amount - $amount;
+                if (Value($request['expenses']) !== $payment->expenses_id) {
+                    $oldExpense = $this->expensesModel->editAmountDec($payment->expenses_id, $amount, $this->expensesModel->getExpense($payment->expenses_id)->get()[0]->amount);
+                    $newExpense = $this->expensesModel->editAmount(Value($request['expenses']), $request['amount'], $this->expensesModel->getExpense(Value($request['expenses']))->get()[0]->amount);
+                } else {
+                    $oldExpense = $this->expensesModel->editAmount($payment->expenses_id, $value, $this->expensesModel->getExpense($payment->expenses_id)->get()[0]->amount);
+                }
+                return $this::payments($id);
             }
-            return $this::payments($id);
-        }
-        
-        if ($amount == $request->amount) {
-            
-            if (Value($request['expenses']) !== $payment[0]->expenses_id) {
-                
-                $oldexpense = app('App\Http\Controllers\ExpensesController')->editamountdec($payment[0]->expenses_id, $amount);
-                $newexpense = app('App\Http\Controllers\ExpensesController')->editamount(Value($request['expenses']), $request['amount']);
+
+            if ($amount == $request->amount && Value($request['expenses']) !== $payment->expenses_id) {
+
+                $oldExpense = $this->expensesModel->editAmountDec($payment->expenses_id, $amount, $this->expensesModel->getExpense($payment->expenses_id)->get()[0]->amount);
+                $newExpense = $this->expensesModel->editAmount(Value($request['expenses']), $request['amount'], $this->expensesModel->getExpense(Value($request['expenses']))->get()[0]->amount);
+
+                return $this::payments($id);
             }
-            return $this::payments($id);
         }
+        session()->flash('message', 'Nie posiadasz uprawnień, aby edytować płatność!');
     }
 
-    public function editform($payment_id) {
-        
-        $id = \Illuminate\Support\Facades\Auth::user()->user_id;
-        $expenses = Expenses::whereIn('user_id', [$id])->get();
-        $payments = Payment::whereIn('payment_id', [$payment_id])->get();
-        $payment = $payments[0];
-        
+    public function editForm($payment_id) {
+
+        $expenses = $this->expensesModel->getExpenses($this->userModel->getUserAuth())->get();
+        $payment = $this->paymentModel->getPayment($payment_id)->get()[0];
         return View('user.editpayment', compact('expenses', 'payment'));
     }
 
-    public function admineditform($payment_id) {
-        
-        $payments = Payment::whereIn('payment_id', [$payment_id])->get();
-        $payment = $payments[0];
-        $expense = Expenses::whereIn('expenses_id', [$payment->expenses_id])->get();
-        $id = $expense[0]->user_id;
-        $expenses = Expenses::whereIn('user_id', [$id])->get();
-        $status = Status::all();
-        
+    public function adminEditForm($payment_id) {
+
+        $payment = $this->paymentModel->getPayment($payment_id)->get()[0];
+        $expense = $this->expensesModel->getExpense($payment->expenses_id)->get()[0];
+        $id = $expense->user_id;
+        $expenses = $this->expensesModel->getExpenses($id)->get();
+        $status = $this->statusModel->getAll();
+
         return View('admin.editpayment', compact('expenses', 'payment', 'status'));
     }
 

@@ -1,6 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta id="token" name="token" content="{ { csrf_token() } }">
 <script src="{{ asset('/js/jquery.min.js') }}"></script>  
 <script src="{{ URL::to('js/video.js') }}"></script>
@@ -18,18 +21,18 @@ $(document).ready(function () {
         }
     });
 //zaznacz wszystkie
-    var guzik_wszystkie = document.getElementById('zaznacz_wszystkie');
-    guzik_wszystkie.addEventListener('click', zaznacz_wszystkie);
-    function zaznacz_wszystkie() {
+    var guzikWszystkie = document.getElementById('zaznaczWszystkie');
+    guzikWszystkie.addEventListener('click', zaznaczWszystkie);
+    function zaznaczWszystkie() {
         var checksy = document.getElementsByName('check');
         for (var i = 0; i < checksy.length; i++) {
             checksy[i].checked = true;
         }
     }
 //odznacz
-    var guzik_odznacz = document.getElementById('odznacz');
-    guzik_odznacz.addEventListener('click', odznacz_zaznaczone);
-    function odznacz_zaznaczone() {
+    var guzikOdznacz = document.getElementById('odznacz');
+    guzikOdznacz.addEventListener('click', odznaczZaznaczone);
+    function odznaczZaznaczone() {
         var checksy = document.getElementsByName('check');
         for (var i = 0; i < checksy.length; i++) {
             if (checksy[i].checked) {
@@ -38,9 +41,9 @@ $(document).ready(function () {
         }
     }
 //usuwanie
-    var guzik_usun = document.getElementById('usun_zaznaczone');
-    guzik_usun.addEventListener('click', usun_zaznaczone);
-    function usun_zaznaczone() {
+    var guzikUsun = document.getElementById('usunZaznaczone');
+    guzikUsun.addEventListener('click', usunZaznaczone);
+    function usunZaznaczone() {
         var zaznaczone = new Array();
         var j = 0;
         var checksy = document.getElementsByName('check');
@@ -59,19 +62,20 @@ $(document).ready(function () {
 
             $.ajax({
                 type: "POST",
-                url: '{{url::to("deleteexpenses")}}',
+                url: '{{url::to("deleteExpenses")}}',
                 async: true,
                 data: {
                     data: zaz2
                 },
                 success: function (ret) {
-                    alert('Wydatki zostały usunięte pomyślnie!');
+                    if(ret == 'success'){
+                    alert('Wydatki zostały usunięte pomyślnie!');}
                 },
                 complete: function () {
                     location.reload();
                 },
                 error: function (jqXHR, errorText, errorThrown) {
-                    alert('error!');
+                    
                 }
             });
         }
@@ -82,12 +86,18 @@ $(document).ready(function () {
 });</script>
 
 <div class="container">
+
     <div class="row">
         <div class="col-md-8 col-md-offset-2">
             <div class="panel panel-default">
                 <div class="panel-heading">Administrator lista wydatków</div>
 
                 <div class="panel-body">
+                    @if (session('message'))
+                    <div class="alert alert-danger">
+                        {{ session('message') }}
+                    </div>
+                    @endif
                     <table class="table table-striped">
                         <thead>
                             <tr>
@@ -99,9 +109,11 @@ $(document).ready(function () {
                                         </button>
                                         <ul class="dropdown-menu">
                                             <li><a id="odznacz" href="#">Odznacz</a></li>
-                                            <li><a id="zaznacz_wszystkie" href="#">Zaznacz wszystkie</a></li>
+                                            <li><a id="zaznaczWszystkie" href="#">Zaznacz wszystkie</a></li>
                                             <li role="separator" class="divider"></li>
-                                            <li id="usun"><a id="usun_zaznaczone" href="#">Usuń zaznaczone</a></li>
+                                            @if (Auth::check()&& (Auth::user()->hasAnyRole(['admin','user'])))
+                                            <li id="usun"><a id="usunZaznaczone" href="#">Usuń zaznaczone</a></li>
+                                            @endif
                                         </ul>
                                     </div></th>
                                 <th>Nazwa</th>
@@ -112,6 +124,7 @@ $(document).ready(function () {
                             </tr>
                         </thead>
                         <tbody>
+                            @if (Auth::check()&& Auth::user()->hasAnyRole(['admin','user']) && Auth::user()->hasPermissionTo('view expenses'))    
 
                             @foreach($expenses as $post)
                             <tr>
@@ -119,17 +132,25 @@ $(document).ready(function () {
                                 <td>{{$post['name']}}</td>
                                 <td>{{$post['amount']}}</td>
                                 <td>{{$post['user']}}</td>
-                                <td><a href="{{ route('editexpense',$post->expenses_id)}}"> Edytuj </a></td>
-                                <td><a href="{{ route('adminpayment',$post->expenses_id) }}"> Przejdz do płatności </a></td>
+                                <td>@if (Auth::check()&& (Auth::user()->hasAnyRole(['admin','user'])))
+                                    <a href="{{ route('editExpense',$post->expenses_id)}}"> Edytuj </a>@endif
+                                </td>
+                                <td>@if (Auth::check()&& (Auth::user()->hasAnyRole(['admin','user'])))
+                                    <a href="{{ route('adminPayment',$post->expenses_id) }}"> Przejdz do płatności </a>@endif
+                                </td>
                             </tr>
                             @endforeach
-
+                            @endif
                         </tbody>
                     </table>
                     <div>{{ $pagination }} </div>
+                    @if (Auth::check()&& Auth::user()->hasRole('admin'))
                     <div>
                         <button type="submit" onClick="location.href = '{{ url('users') }}'" class="btn btn-primary" >Lista użytkowników</button>
                     </div>
+                    @endif
+
+
                 </div>
             </div>
         </div>

@@ -15,12 +15,12 @@ $(document).ready(function () {
 $.ajaxSetup({
 headers: {
 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        }
+}
 });
 //zaznacz wszystkie
-var guzik_wszystkie = document.getElementById('zaznacz_wszystkie');
-guzik_wszystkie.addEventListener('click', zaznacz_wszystkie);
-function zaznacz_wszystkie() {
+var guzikWszystkie = document.getElementById('zaznaczWszystkie');
+guzikWszystkie.addEventListener('click', zaznaczWszystkie);
+function zaznaczWszystkie() {
 var checksy = document.getElementsByName('check');
 for (var i = 0; i < checksy.length; i++) {
 if (checksy[i].getAttribute('disabled') !== 'disabled'){
@@ -28,9 +28,9 @@ checksy[i].checked = true; }
 }
 }
 //odznacz
-var guzik_odznacz = document.getElementById('odznacz');
-guzik_odznacz.addEventListener('click', odznacz_zaznaczone);
-function odznacz_zaznaczone() {
+var guzikOdznacz = document.getElementById('odznacz');
+guzikOdznacz.addEventListener('click', odznaczZaznaczone);
+function odznaczZaznaczone() {
 var checksy = document.getElementsByName('check');
 for (var i = 0; i < checksy.length; i++) {
 if (checksy[i].checked) {
@@ -39,9 +39,9 @@ checksy[i].checked = false;
 }
 }
 //usuwanie
-var guzik_usun = document.getElementById('usun_zaznaczone');
-guzik_usun.addEventListener('click', usun_zaznaczone);
-function usun_zaznaczone() {
+var guzikUsun = document.getElementById('usunZaznaczone');
+guzikUsun.addEventListener('click', usunZaznaczone);
+function usunZaznaczone() {
 var zaznaczone = new Array();
 var j = 0;
 var checksy = document.getElementsByName('check');
@@ -60,19 +60,20 @@ zaz2[j] = zaznaczone[j].substring(5);
 
 $.ajax({
 type: "POST",
-        url: '{{url::to("deletepayment")}}',
+        url: '{{url::to("deletePayment")}}',
         async: true,
         data: {
         data: zaz2
         },
         success: function (ret) {
-        alert('Platność została usunięta pomyślnie!');
+        if (ret == 'success'){
+        alert('Platność została usunięta pomyślnie!'); }
         },
         complete: function () {
         location.reload();
         },
         error: function (jqXHR, errorText, errorThrown) {
-        alert('error!');
+
         }
 });
 }
@@ -89,6 +90,11 @@ alert('nic nie zaznaczyłes!');
                 <div class="panel-heading">Lista płatności</div>
 
                 <div class="panel-body">
+                    @if (session('message'))
+                    <div class="alert alert-danger">
+                        {{ session('message') }}
+                    </div>
+                    @endif
                     <table class="table table-striped">
                         <thead>
                             <tr>
@@ -100,9 +106,11 @@ alert('nic nie zaznaczyłes!');
                                         </button>
                                         <ul class="dropdown-menu">
                                             <li><a id="odznacz" href="#">Odznacz</a></li>
-                                            <li><a id="zaznacz_wszystkie" href="#">Zaznacz wszystkie</a></li>
+                                            <li><a id="zaznaczWszystkie" href="#">Zaznacz wszystkie</a></li>
                                             <li role="separator" class="divider"></li>
-                                            <li id="usun"><a id="usun_zaznaczone" href="#">Usuń zaznaczone</a></li>
+                                            @if (Auth::check()&& (Auth::user()->hasRole('admin') || Auth::user()->hasRole('user')))
+                                            <li id="usun"><a id="usunZaznaczone" href="#">Usuń zaznaczone</a></li>
+                                            @endif
                                         </ul>
                                     </div></th>
                                 <th>Odbiorca</th>
@@ -113,7 +121,7 @@ alert('nic nie zaznaczyłes!');
                             </tr>
                         </thead>
                         <tbody>
-
+                            @if (Auth::check()&& Auth::user()->hasAnyRole(['admin','user']) && Auth::user()->hasPermissionTo('view payments'))
                             @foreach($payment as $post)
                             <tr>
                                 <td>@if($post->status_id === 1 || $post->status_id === 3)<input type="checkbox" name="check" id="check{{$post['payment_id']}}"/>
@@ -125,15 +133,17 @@ alert('nic nie zaznaczyłes!');
                                 @if($post->status === 'zatwierdzona')
                                 <td style="color:#00ccff;">{{$post['status']}}</td> @else
                                 <td>{{$post['status']}}</td>@endif
-                                <td>@if($post->status_id === 1)<a href="{{ route('editpayment',$post->payment_id) }}"> Edytuj </a>@endif</td>
+                                <td>@if(($post->status_id === 1 || $post->status_id === 3) && (Auth::check() && (Auth::user()->hasRole('user') || Auth::user()->hasRole('admin'))))<a href="{{ route('editPayment',$post->payment_id) }}"> Edytuj </a>@endif</td>
                             </tr>
                             @endforeach
-
+                            @endif
                         </tbody>
                     </table>
                     <div>{{ $pagination }} </div>
                     <div>
-                        <button type="submit" onClick="location.href = '{{ url('newpayment') }}'" class="btn btn-primary" >Dodaj płatność</button>
+                        @if(Auth::check() && Auth::user()->hasRole('user'))
+                        <button type="submit" onClick="location.href = '{{ url('newPayment') }}'" class="btn btn-primary" >Dodaj płatność</button>
+                        @endif
                         <button type="submit" onClick="location.href = '{{ url('/') }}'" class="btn btn-primary" style="margin-left:73.5%;">Wróć</button>
                     </div>
 
